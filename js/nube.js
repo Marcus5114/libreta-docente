@@ -178,6 +178,9 @@ function mensajeLegible(codigo, cuerpo) {
   } catch {
     /* se usa el texto crudo */
   }
+  if (/permission denied for table/i.test(detalle)) {
+    return "Falta el permiso de la tabla en Supabase. Corré el SQL de Ajustes otra vez: la línea del grant es la que falta.";
+  }
   if (/invalid api key/i.test(detalle)) {
     return "La clave pública no es la de este proyecto, o se copió incompleta. Fijate que la URL y la clave salgan del mismo proyecto.";
   }
@@ -373,20 +376,28 @@ export function arrancarSincronizacion() {
 
 /** El SQL que hay que correr una vez en Supabase. Se muestra en Ajustes. */
 export const SQL_DE_INSTALACION = `-- Pegá esto en el editor SQL de Supabase y ejecutalo una vez.
-create table if not exists libretas (
+
+-- 1. La tabla: una fila por docente, con toda su Libreta adentro.
+create table if not exists public.libretas (
   id uuid primary key references auth.users on delete cascade,
   documento jsonb not null default '{}'::jsonb,
   dispositivo text,
   actualizado timestamptz not null default now()
 );
 
-alter table libretas enable row level security;
+-- 2. El permiso. Desde mayo de 2026 las tablas nuevas no lo reciben solas:
+--    sin esto, Postgres rechaza todo con "permission denied for table",
+--    antes incluso de mirar las políticas de abajo.
+grant select, insert, update on table public.libretas to authenticated;
+
+-- 3. Las políticas: cada docente, sólo su fila.
+alter table public.libretas enable row level security;
 
 create policy "cada docente ve lo suyo"
-  on libretas for select using (auth.uid() = id);
+  on public.libretas for select using (auth.uid() = id);
 
 create policy "cada docente escribe lo suyo"
-  on libretas for insert with check (auth.uid() = id);
+  on public.libretas for insert with check (auth.uid() = id);
 
 create policy "cada docente actualiza lo suyo"
-  on libretas for update using (auth.uid() = id);`;
+  on public.libretas for update using (auth.uid() = id);`;

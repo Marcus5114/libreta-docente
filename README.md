@@ -108,24 +108,34 @@ notebook.
 2. En el editor SQL, corré una vez:
 
 ```sql
-create table if not exists libretas (
+-- 1. La tabla: una fila por docente, con toda su Libreta adentro.
+create table if not exists public.libretas (
   id uuid primary key references auth.users on delete cascade,
   documento jsonb not null default '{}'::jsonb,
   dispositivo text,
   actualizado timestamptz not null default now()
 );
 
-alter table libretas enable row level security;
+-- 2. El permiso. Desde mayo de 2026 las tablas nuevas no lo reciben solas:
+--    sin esto, Postgres rechaza todo con "permission denied for table",
+--    antes incluso de mirar las políticas de abajo.
+grant select, insert, update on table public.libretas to authenticated;
+
+-- 3. Las políticas: cada docente, sólo su fila.
+alter table public.libretas enable row level security;
 
 create policy "cada docente ve lo suyo"
-  on libretas for select using (auth.uid() = id);
+  on public.libretas for select using (auth.uid() = id);
 
 create policy "cada docente escribe lo suyo"
-  on libretas for insert with check (auth.uid() = id);
+  on public.libretas for insert with check (auth.uid() = id);
 
 create policy "cada docente actualiza lo suyo"
-  on libretas for update using (auth.uid() = id);
+  on public.libretas for update using (auth.uid() = id);
 ```
+
+   El `grant` importa: sin él Postgres rechaza todo con «permission denied
+   for table», antes de mirar las políticas.
 
 3. En la app, Ajustes → Configurar, pegá la URL del proyecto y la clave
    pública (`anon`), que están en Project Settings → API.

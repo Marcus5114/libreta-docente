@@ -5,7 +5,7 @@
 // de eso se encarga la sincronización. Al publicar una versión nueva se cambia
 // VERSION y la caché vieja se tira.
 
-const VERSION = "libreta-v3";
+const VERSION = "libreta-v4";
 
 const ARCHIVOS = [
   "./",
