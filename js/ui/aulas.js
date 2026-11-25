@@ -11,12 +11,15 @@ import { barra } from "./cursos.js";
 import { activos, iniciales, nombreCompleto, ordenar } from "../domain/alumnos.js";
 import {
   FORMAS,
+  agarrable,
   agregarBanco,
   aplicarForma,
   enCelda,
   levantar,
   libre,
   lugaresEnOrden,
+  moverLugar,
+  moverMueble,
   muebleEnCelda,
   quitarLugar,
   sentar,
@@ -107,15 +110,25 @@ function miniatura(aula) {
 
 const MODOS = [
   { valor: "agregar", etiqueta: "Agregar" },
+  { valor: "mover", etiqueta: "Mover" },
   { valor: "quitar", etiqueta: "Quitar" },
   { valor: "sentar", etiqueta: "Sentar" },
 ];
+
+const AYUDA = {
+  agregar: "Deslizá para poner varios",
+  mover: "Tocá qué mover y después adónde",
+  quitar: "Deslizá para sacar varios",
+  sentar: "Tocá un escritorio",
+};
 
 export function pantallaAula({ parametro, volver }) {
   const aula = estado.aula(parametro);
   if (!aula) return el("div.pantalla", el("p", "Esa aula ya no está."));
 
   let modo = pantallaAula.modo || "agregar";
+  // Lo agarrado en el modo Mover: { tipo: "lugar" | "mueble", id }.
+  let agarrado = null;
   const curso = estado.cursoActual();
   const sentando = () => modo === "sentar" && curso;
   const asientos = () =>
@@ -128,6 +141,7 @@ export function pantallaAula({ parametro, volver }) {
   const dibujar = () => {
     poner(zonaPlano, planoEditable(), sentando() ? piePersonas : null);
     if (sentando()) dibujarSueltos();
+    dibujarPie();
   };
 
   const planoEditable = () => {
@@ -163,6 +177,9 @@ export function pantallaAula({ parametro, volver }) {
         const mueble = muebleEnCelda(aula, c, f);
         if (mueble && mueble.c !== c) continue;
 
+        // El dibujo de un mueble adelanta `c` hasta su última celda, así que
+        // la columna donde se tocó se guarda antes de eso.
+        const columna = c;
         const celda = el("div.celda" + (lugar || mueble ? "" : ".vacia"), {
           datos: { c, f },
         });
@@ -172,7 +189,9 @@ export function pantallaAula({ parametro, volver }) {
           celda.classList.add("ancha");
           celda.append(
             el(
-              "div.mueble" + (mueble.tipo === "puerta" ? ".puerta" : ""),
+              "div.mueble" +
+                (mueble.tipo === "puerta" ? ".puerta" : "") +
+                (agarrado?.id === mueble.id ? ".elegido" : ""),
               mueble.tipo === "puerta" ? "Puerta" : "Pizarrón",
             ),
           );
@@ -185,6 +204,10 @@ export function pantallaAula({ parametro, volver }) {
           e.preventDefault();
           if (sentando()) {
             if (lugar) elegirQuienSeSienta(lugar);
+            return;
+          }
+          if (modo === "mover") {
+            tocarParaMover(columna, f);
             return;
           }
           pintando = true;
@@ -205,6 +228,52 @@ export function pantallaAula({ parametro, volver }) {
     return plano;
   };
 
+  /**
+   * Mover es en dos toques: uno elige qué, el otro adónde. En una pantalla
+   * chica sale mejor que arrastrar, porque el dedo tapa justamente lo que se
+   * está moviendo y soltar fuera de lugar es fácil.
+   */
+  const tocarParaMover = (c, f) => {
+    const aquí = agarrable(aula, c, f);
+
+    if (!agarrado) {
+      if (!aquí) return avisar("Tocá un escritorio, el pizarrón o la puerta");
+      agarrado = { tipo: aquí.tipo, id: aquí.cosa.id };
+      dibujar();
+      return;
+    }
+
+    // Tocar de nuevo lo agarrado lo suelta.
+    if (aquí && aquí.cosa.id === agarrado.id) {
+      agarrado = null;
+      dibujar();
+      return;
+    }
+
+    let movido = false;
+    const queMueve = agarrado;
+    estado.guardarAula(aula.id, (a) => {
+      movido =
+        queMueve.tipo === "mueble"
+          ? moverMueble(a, queMueve.id, c, f)
+          : moverLugar(a, queMueve.id, c, f);
+    });
+
+    if (movido) {
+      agarrado = null;
+      dibujar();
+      return;
+    }
+
+    // No entraba: si lo tocado es otra cosa, se pasa a mover esa.
+    if (aquí) {
+      agarrado = { tipo: aquí.tipo, id: aquí.cosa.id };
+      dibujar();
+    } else {
+      avisar("Ahí no entra");
+    }
+  };
+
   const bancoDibujado = (lugar) => {
     const unidos = vecinos(aula, lugar);
     const clases = Object.entries(unidos)
@@ -218,7 +287,10 @@ export function pantallaAula({ parametro, volver }) {
       texto = alumno ? iniciales(alumno) : "";
     }
     return el(
-      "div.banco" + (clases ? "." + clases : "") + (sentando() && !texto ? ".libre" : ""),
+      "div.banco" +
+        (clases ? "." + clases : "") +
+        (sentando() && !texto ? ".libre" : "") +
+        (agarrado?.id === lugar.id ? ".elegido" : ""),
       texto || (sentando() ? "+" : ""),
     );
   };
@@ -304,14 +376,22 @@ export function pantallaAula({ parametro, volver }) {
     ]);
   };
 
-  const pie = el("footer.clase-pie");
+  const pie = el("footer.clase-pie.apilado");
 
   const dibujarPie = () =>
     poner(
       pie,
       el(
+        "div.apunte",
+        { estilo: { textAlign: "center" } },
+        agarrado
+          ? "Ahora tocá adónde va"
+          : sentando()
+            ? `Tocá un escritorio para sentar a ${curso.nombre}`
+            : AYUDA[modo],
+      ),
+      el(
         "div.segmentado",
-        { estilo: { flex: "1 1 auto" } },
         MODOS.filter((m) => m.valor !== "sentar" || curso).map((m) =>
           el(
             "button",
@@ -320,22 +400,13 @@ export function pantallaAula({ parametro, volver }) {
               onclick: () => {
                 modo = m.valor;
                 pantallaAula.modo = m.valor;
-                dibujarPie();
+                agarrado = null;
                 dibujar();
               },
             },
-            m.valor === "sentar" && curso ? `Sentar ${curso.nombre}` : m.etiqueta,
+            m.etiqueta,
           ),
         ),
-      ),
-      el(
-        "div.apunte",
-        { estilo: { flex: "0 0 auto", marginLeft: "8px" } },
-        modo === "agregar"
-          ? "Deslizá para poner varios"
-          : modo === "quitar"
-            ? "Deslizá para sacar varios"
-            : "Tocá un escritorio",
       ),
     );
 

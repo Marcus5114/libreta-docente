@@ -15,9 +15,10 @@ lo que cargás en el aula aparece en la notebook.
   mantener el dedo apretado llena el casillero y marca ausente. El `−1` corrige.
 - **Aula.** Un plano de escritorios cuadrados: tocás una celda y aparece un
   banco, deslizás y aparecen varios. Dos bancos pegados se dibujan como un solo
-  mueble, así salen grupos, filas, de a dos o una U. El aula no pertenece a
-  ningún curso: cualquier curso se muestra en cualquier aula, y cada curso
-  guarda sus propios lugares.
+  mueble, así salen grupos, filas, de a dos o una U. En modo Mover se toca qué
+  mover y después adónde, y vale igual para los bancos, el pizarrón y la
+  puerta. El aula no pertenece a ningún curso: cualquier curso se muestra en
+  cualquier aula, y cada curso guarda sus propios lugares.
 - **Trabajos.** TP y exámenes con número, nombre, fecha de consigna, fecha
   límite y fecha de reentrega. Por alumno: entregó, a tiempo, reentrega, nota
   original y nota de reentrega. La nota que cuenta es la última que haya.
@@ -59,6 +60,8 @@ Las mismas en el código, en la pantalla y en este archivo.
   en cambio, no cuenta: todavía no pasó nada.
 - **Una conducta sacada del menú no se borra**, para que los toques viejos sigan
   teniendo nombre en los reportes.
+- **Mover es en dos toques, no arrastrando.** En una pantalla chica el dedo
+  tapa justamente lo que se está moviendo, y soltar fuera de lugar es fácil.
 - **El aula se recorta en modo clase.** Se dibuja sólo la parte que tiene algo,
   y nunca por debajo de 46 píxeles por escritorio, para que el dedo no falle.
 

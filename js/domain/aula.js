@@ -45,9 +45,39 @@ export function muebleEnCelda(aula, c, f) {
   );
 }
 
-export function libre(aula, c, f) {
-  if (c < 0 || f < 0 || c >= aula.columnas || f >= aula.filas) return false;
-  return !enCelda(aula, c, f) && !muebleEnCelda(aula, c, f);
+/**
+ * Qué hay en una celda: un escritorio, un mueble, o nada. `exceptoId` sirve al
+ * mover: una cosa nunca se estorba a sí misma, y el pizarrón ocupa tres celdas
+ * que tiene que poder volver a pisar al correrse de a una.
+ */
+export function ocupante(aula, c, f, exceptoId = null) {
+  const lugar = aula.lugares.find(
+    (l) => l.c === c && l.f === f && l.id !== exceptoId,
+  );
+  if (lugar) return lugar;
+  return (
+    aula.muebles.find(
+      (m) =>
+        m.f === f && c >= m.c && c < m.c + (m.ancho || 1) && m.id !== exceptoId,
+    ) || null
+  );
+}
+
+export function dentro(aula, c, f) {
+  return c >= 0 && f >= 0 && c < aula.columnas && f < aula.filas;
+}
+
+export function libre(aula, c, f, exceptoId = null) {
+  return dentro(aula, c, f) && !ocupante(aula, c, f, exceptoId);
+}
+
+/** Si algo de `ancho` celdas entra con su esquina izquierda en (c, f). */
+export function cabe(aula, c, f, ancho = 1, exceptoId = null) {
+  if (c < 0 || c + ancho > aula.columnas) return false;
+  for (let i = 0; i < ancho; i++) {
+    if (!libre(aula, c + i, f, exceptoId)) return false;
+  }
+  return true;
 }
 
 /** Agrega un escritorio, si la celda está libre. Devuelve el lugar o null. */
@@ -65,10 +95,40 @@ export function quitarLugar(aula, lugarId) {
 /** Mueve un escritorio a otra celda, si está libre. */
 export function moverLugar(aula, lugarId, c, f) {
   const lugar = aula.lugares.find((l) => l.id === lugarId);
-  if (!lugar || !libre(aula, c, f)) return false;
+  if (!lugar || !libre(aula, c, f, lugarId)) return false;
   lugar.c = c;
   lugar.f = f;
   return true;
+}
+
+/**
+ * Mueve el pizarrón o la puerta. Se toca una celda y el mueble se centra en
+ * ella lo mejor que puede: un pizarrón de tres celdas, tocado en el borde,
+ * se corre adentro en vez de no moverse.
+ */
+export function moverMueble(aula, muebleId, c, f) {
+  const mueble = aula.muebles.find((m) => m.id === muebleId);
+  if (!mueble || !dentro(aula, c, f)) return false;
+  const ancho = mueble.ancho || 1;
+  const centrado = c - Math.floor((ancho - 1) / 2);
+  const candidatos = [centrado, c, c - ancho + 1];
+  for (const inicio of candidatos) {
+    const recortado = Math.min(Math.max(inicio, 0), aula.columnas - ancho);
+    if (cabe(aula, recortado, f, ancho, muebleId)) {
+      mueble.c = recortado;
+      mueble.f = f;
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Lo que se puede agarrar en una celda, para el modo Mover. */
+export function agarrable(aula, c, f) {
+  const cosa = ocupante(aula, c, f);
+  if (!cosa) return null;
+  const esMueble = aula.muebles.includes(cosa);
+  return { tipo: esMueble ? "mueble" : "lugar", cosa };
 }
 
 /**

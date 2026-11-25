@@ -10,8 +10,11 @@ import { clave, inicioDeRango } from "../js/domain/dias.js";
 import { CUENTA, INTERRUPTOR, ENTREGADO, NO_ENTREGADO } from "../js/domain/types.js";
 import {
   nuevaAula,
+  agarrable,
   aplicarForma,
   agregarBanco,
+  moverLugar,
+  moverMueble,
   vecinos,
   recorte,
   sentarAutomatico,
@@ -365,4 +368,61 @@ test("el enlace de configuración va y vuelve igual", () => {
     "base64",
   ).toString();
   assert.deepEqual(JSON.parse(crudo), datos);
+});
+
+// ------------------------------------------------------------ mover cosas
+
+test("un escritorio se mueve a una celda libre y no a una ocupada", () => {
+  const aula = nuevaAula();
+  const a = agregarBanco(aula, 3, 5);
+  const b = agregarBanco(aula, 4, 5);
+  assert.equal(moverLugar(aula, a.id, 3, 7), true);
+  assert.deepEqual([a.c, a.f], [3, 7]);
+  assert.equal(moverLugar(aula, a.id, b.c, b.f), false, "no pisa a otro banco");
+  assert.deepEqual([a.c, a.f], [3, 7], "si no se puede, no se mueve a medias");
+  assert.equal(moverLugar(aula, a.id, -1, 7), false, "no se va del plano");
+});
+
+test("un escritorio se puede mover al lugar que él mismo ocupa", () => {
+  const aula = nuevaAula();
+  const a = agregarBanco(aula, 2, 4);
+  assert.equal(moverLugar(aula, a.id, 2, 4), true, "no se estorba a sí mismo");
+});
+
+test("el pizarrón se mueve y se centra en la celda tocada", () => {
+  const aula = nuevaAula();
+  const pizarron = aula.muebles.find((m) => m.tipo === "pizarron");
+  assert.equal(pizarron.ancho, 3);
+  assert.equal(moverMueble(aula, pizarron.id, 5, 8), true);
+  // Tocando la celda 5, un mueble de tres arranca en la 4 y la tapa.
+  assert.equal(pizarron.f, 8);
+  assert.ok(pizarron.c <= 5 && 5 < pizarron.c + 3, "la celda tocada queda adentro");
+});
+
+test("un mueble tocado contra el borde se corre para adentro", () => {
+  const aula = nuevaAula();
+  const pizarron = aula.muebles.find((m) => m.tipo === "pizarron");
+  assert.equal(moverMueble(aula, pizarron.id, aula.columnas - 1, 9), true);
+  assert.equal(pizarron.c + 3, aula.columnas, "queda pegado al borde, no afuera");
+});
+
+test("el pizarrón no se mete encima de un escritorio", () => {
+  const aula = nuevaAula();
+  const pizarron = aula.muebles.find((m) => m.tipo === "pizarron");
+  for (let c = 0; c < aula.columnas; c++) agregarBanco(aula, c, 10);
+  assert.equal(moverMueble(aula, pizarron.id, 5, 10), false);
+});
+
+test("se reconoce qué hay en cada celda para poder agarrarlo", () => {
+  const aula = nuevaAula();
+  const banco = agregarBanco(aula, 4, 6);
+  const puerta = aula.muebles.find((m) => m.tipo === "puerta");
+  assert.deepEqual(agarrable(aula, 4, 6), { tipo: "lugar", cosa: banco });
+  assert.equal(agarrable(aula, puerta.c, puerta.f).tipo, "mueble");
+  assert.equal(
+    agarrable(aula, puerta.c + 1, puerta.f).cosa.id,
+    puerta.id,
+    "la segunda celda de la puerta también la agarra",
+  );
+  assert.equal(agarrable(aula, 0, 11), null);
 });
