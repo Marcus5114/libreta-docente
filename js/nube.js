@@ -78,9 +78,67 @@ export function limpiarUrl(url) {
     .replace(/\/+$/, "");
 }
 
+/**
+ * Una clave no lleva espacios en ningún lado. Al copiarla en el teléfono se
+ * cuelan saltos de línea y espacios del medio que el navegador manda tal cual,
+ * y Supabase contesta «Invalid API key» sin decir por qué: se sacan todos.
+ */
+export function limpiarClave(clave) {
+  return String(clave).replace(/\s+/g, "");
+}
+
+/**
+ * Avisa si la clave pegada es la secreta. Esa salta las reglas de seguridad:
+ * quien la tenga lee y escribe los datos de todos, y en una app que se publica
+ * queda a la vista de cualquiera. Mejor frenar acá que después.
+ */
+export function esClaveSecreta(clave) {
+  const limpia = limpiarClave(clave);
+  if (limpia.startsWith("sb_secret_")) return true;
+  const partes = limpia.split(".");
+  if (partes.length !== 3) return false;
+  try {
+    const carga = JSON.parse(
+      atob(partes[1].replace(/-/g, "+").replace(/_/g, "/")),
+    );
+    return carga.role === "service_role";
+  } catch {
+    return false;
+  }
+}
+
 export function guardarConfig(url, clave) {
-  guardarJson(CONFIG, { url: limpiarUrl(url), clave: clave.trim() });
+  guardarJson(CONFIG, { url: limpiarUrl(url), clave: limpiarClave(clave) });
   anunciar(nube.configurada ? "desconectada" : "sin-configurar");
+}
+
+/**
+ * Un enlace que lleva la configuración adentro, para no volver a tipear la
+ * clave en cada dispositivo: abrirlo en el teléfono lo deja configurado. Sólo
+ * viaja lo público (la dirección del proyecto y la clave pública), que es lo
+ * mismo que cualquiera puede leer en el código de la app; la cuenta se sigue
+ * necesitando aparte.
+ */
+export function enlaceDeConfiguracion() {
+  const { url, clave } = nube.config;
+  const empaquetado = btoa(JSON.stringify({ url, clave }))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+  return location.origin + location.pathname + "#/conectar/" + empaquetado;
+}
+
+/** Lee el enlace de arriba. Devuelve true si quedó configurado. */
+export function leerEnlaceDeConfiguracion(empaquetado) {
+  try {
+    const crudo = atob(empaquetado.replace(/-/g, "+").replace(/_/g, "/"));
+    const { url, clave } = JSON.parse(crudo);
+    if (!url || !clave) return false;
+    guardarConfig(url, clave);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ------------------------------------------------------------------ acceso
@@ -119,6 +177,9 @@ function mensajeLegible(codigo, cuerpo) {
     detalle = json.msg || json.message || json.error_description || json.error || cuerpo;
   } catch {
     /* se usa el texto crudo */
+  }
+  if (/invalid api key/i.test(detalle)) {
+    return "La clave pública no es la de este proyecto, o se copió incompleta. Fijate que la URL y la clave salgan del mismo proyecto.";
   }
   if (codigo === 400 && /invalid login/i.test(detalle)) return "Mail o contraseña incorrectos";
   if (codigo === 422) return "Esa contraseña es muy corta (mínimo seis caracteres)";

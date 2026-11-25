@@ -19,7 +19,12 @@ import {
 } from "../js/domain/aula.js";
 import { notaFinal, promedioDe, leerNota, resumen } from "../js/domain/trabajos.js";
 import { aCsv, trabajosCsv } from "../js/domain/reportes.js";
-import { fusionar, limpiarUrl } from "../js/nube.js";
+import {
+  esClaveSecreta,
+  fusionar,
+  limpiarClave,
+  limpiarUrl,
+} from "../js/nube.js";
 
 // --------------------------------------------------------------- alumnos
 
@@ -332,4 +337,32 @@ test("la URL del proyecto se limpia venga como venga", () => {
   ]) {
     assert.equal(limpiarUrl(pegada), base, `no limpió: ${pegada}`);
   }
+});
+
+test("la clave se limpia de espacios y saltos pegados sin querer", () => {
+  assert.equal(limpiarClave("  eyJhbG ciOi\nJIUzI1  "), "eyJhbGciOiJIUzI1");
+});
+
+test("se reconoce la clave secreta para no dejarla entrar", () => {
+  const jwt = (carga) =>
+    "x." + Buffer.from(JSON.stringify(carga)).toString("base64url") + ".y";
+  assert.equal(esClaveSecreta(jwt({ role: "service_role" })), true);
+  assert.equal(esClaveSecreta(jwt({ role: "anon" })), false);
+  assert.equal(esClaveSecreta("sb_secret_abc123"), true);
+  assert.equal(esClaveSecreta("sb_publishable_abc123"), false);
+  assert.equal(esClaveSecreta("cualquier cosa"), false);
+});
+
+test("el enlace de configuración va y vuelve igual", () => {
+  const datos = { url: "https://abc.supabase.co", clave: "eyJhbGciOiJIUzI1NiJ9" };
+  const empaquetado = Buffer.from(JSON.stringify(datos))
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+  const crudo = Buffer.from(
+    empaquetado.replace(/-/g, "+").replace(/_/g, "/"),
+    "base64",
+  ).toString();
+  assert.deepEqual(JSON.parse(crudo), datos);
 });

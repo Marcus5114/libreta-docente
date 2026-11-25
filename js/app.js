@@ -1,14 +1,18 @@
 // El armazón: arranca la app, elige qué pantalla mostrar y dibuja las pestañas.
 
 import * as estado from "./estado.js";
-import { cerrarCapas, el, icono, poner } from "./ui/html.js";
+import { avisar, cerrarCapas, el, icono, poner } from "./ui/html.js";
 import { pantallaCursos, pantallaCurso } from "./ui/cursos.js";
 import { pantallaClase } from "./ui/clase.js";
 import { pantallaTrabajos, pantallaTrabajo } from "./ui/trabajos.js";
 import { pantallaAulas, pantallaAula } from "./ui/aulas.js";
 import { pantallaReportes } from "./ui/reportes.js";
 import { pantallaAjustes } from "./ui/ajustes.js";
-import { alCambiarNube, arrancarSincronizacion } from "./nube.js";
+import {
+  alCambiarNube,
+  arrancarSincronizacion,
+  leerEnlaceDeConfiguracion,
+} from "./nube.js";
 
 const RUTAS = [
   { patron: /^\/?$/, pantalla: pantallaCursos, pestana: "cursos" },
@@ -20,7 +24,24 @@ const RUTAS = [
   { patron: /^\/aula\/([^/]+)$/, pantalla: pantallaAula, pestana: "cursos", limpia: true },
   { patron: /^\/reportes$/, pantalla: pantallaReportes, pestana: "reportes" },
   { patron: /^\/ajustes$/, pantalla: pantallaAjustes, pestana: "ajustes" },
+  { patron: /^\/conectar\/([^/]+)$/, pantalla: pantallaConectar, pestana: "ajustes" },
 ];
+
+/** Un enlace de configuración traído desde otro dispositivo. */
+function pantallaConectar({ parametro }) {
+  const listo = leerEnlaceDeConfiguracion(parametro);
+  setTimeout(() => ir("#/ajustes"), 0);
+  setTimeout(
+    () =>
+      avisar(
+        listo
+          ? "Proyecto configurado. Ahora entrá con tu cuenta."
+          : "Ese enlace no se entiende; configuralo a mano",
+      ),
+    300,
+  );
+  return el("div.pantalla", el("p.apunte", "Configurando…"));
+}
 
 const PESTANAS = [
   { id: "cursos", etiqueta: "Cursos", icono: "gente", ruta: "#/" },

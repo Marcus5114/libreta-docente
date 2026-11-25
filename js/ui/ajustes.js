@@ -6,7 +6,9 @@ import { barra } from "./cursos.js";
 import { espacioUsado } from "../deposito.js";
 import {
   SQL_DE_INSTALACION,
+  enlaceDeConfiguracion,
   entrar,
+  esClaveSecreta,
   guardarConfig,
   nube,
   registrarse,
@@ -160,6 +162,24 @@ function tarjetaNube() {
           ),
       ]),
 
+      nube.configurada &&
+        el(
+          "button.boton.ancho",
+          {
+            estilo: { marginTop: "8px" },
+            onclick: async () => {
+              const enlace = enlaceDeConfiguracion();
+              try {
+                await navigator.clipboard.writeText(enlace);
+                avisar("Enlace copiado; abrilo en el otro dispositivo");
+              } catch {
+                prompt("Copiá este enlace y abrilo en el otro dispositivo:", enlace);
+              }
+            },
+          },
+          "Copiar enlace para otro dispositivo",
+        ),
+
       nube.conectada &&
         el(
           "button.boton.ancho",
@@ -244,6 +264,12 @@ function configurarNube(alTerminar) {
         {
           onclick: () => {
             if (!url.trim() || !clave.trim()) return avisar("Faltan datos");
+            if (esClaveSecreta(clave)) {
+              return avisar(
+                "Esa es la clave secreta; va la pública (anon)",
+                "mal",
+              );
+            }
             guardarConfig(url, clave);
             cerrar();
             alTerminar();

@@ -417,6 +417,10 @@ input[type="checkbox"] {
     color: #161616;
   }
 }
+.aviso.mal {
+  background: var(--peligro);
+  color: #fff;
+}
 .aviso.yendose {
   opacity: 0;
   transform: translate(-50%, 8px);
