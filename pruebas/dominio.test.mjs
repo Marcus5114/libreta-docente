@@ -19,7 +19,7 @@ import {
 } from "../js/domain/aula.js";
 import { notaFinal, promedioDe, leerNota, resumen } from "../js/domain/trabajos.js";
 import { aCsv, trabajosCsv } from "../js/domain/reportes.js";
-import { fusionar } from "../js/nube.js";
+import { fusionar, limpiarUrl } from "../js/nube.js";
 
 // --------------------------------------------------------------- alumnos
 
@@ -318,4 +318,18 @@ test("fusionar dos veces da lo mismo que fusionar una", () => {
   const una = fusionar(local, remoto);
   const dos = fusionar(una, remoto);
   assert.deepEqual(dos, una);
+});
+
+test("la URL del proyecto se limpia venga como venga", () => {
+  const base = "https://saelmfjcpyvcftsmthdz.supabase.co";
+  for (const pegada of [
+    base,
+    base + "/",
+    base + "/rest/v1/",
+    base + "/rest/v1",
+    base + "/auth/v1/",
+    "  " + base + "/rest/v1/  ",
+  ]) {
+    assert.equal(limpiarUrl(pegada), base, `no limpió: ${pegada}`);
+  }
 });

@@ -198,6 +198,7 @@ function configurarNube(alTerminar) {
         inputmode: "url",
         oninput: (e) => (url = e.target.value),
       }),
+      el("div.apunte", "Sólo la base. Si copiás una que termina en /rest/v1/, se recorta sola."),
     ]),
     el("label.campo", [
       el("span", "Clave pública (anon)"),

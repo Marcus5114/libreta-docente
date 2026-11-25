@@ -65,8 +65,21 @@ function guardarJson(clave, valor) {
   else localStorage.setItem(clave, JSON.stringify(valor));
 }
 
+/**
+ * Deja la URL en la base del proyecto. El panel de Supabase muestra la
+ * dirección con `/rest/v1/` colgando en la sección de la API, y es lo que uno
+ * termina copiando; la app le agrega esa parte sola, así que acá se saca.
+ */
+export function limpiarUrl(url) {
+  return String(url)
+    .trim()
+    .replace(/\/+$/, "")
+    .replace(/\/(rest|auth|storage|realtime|functions)\/v\d+$/, "")
+    .replace(/\/+$/, "");
+}
+
 export function guardarConfig(url, clave) {
-  guardarJson(CONFIG, { url: url.replace(/\/+$/, ""), clave: clave.trim() });
+  guardarJson(CONFIG, { url: limpiarUrl(url), clave: clave.trim() });
   anunciar(nube.configurada ? "desconectada" : "sin-configurar");
 }
 
