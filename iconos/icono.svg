@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Libreta Docente">
+  <rect width="512" height="512" rx="112" fill="#2e2e2e" />
+  <!-- La hoja -->
+  <rect x="136" y="96" width="248" height="320" rx="24" fill="#fbfbfa" />
+  <!-- El lomo anillado -->
+  <rect x="112" y="96" width="40" height="320" rx="20" fill="#9a9a9a" />
+  <g fill="#2e2e2e">
+    <circle cx="132" cy="150" r="9" />
+    <circle cx="132" cy="214" r="9" />
+    <circle cx="132" cy="278" r="9" />
+    <circle cx="132" cy="342" r="9" />
+  </g>
+  <!-- Los renglones -->
+  <g stroke="#b4b4b4" stroke-width="16" stroke-linecap="round">
+    <line x1="196" y1="162" x2="340" y2="162" />
+    <line x1="196" y1="218" x2="340" y2="218" />
+  </g>
+  <!-- El tilde -->
+  <path
+    d="M198 330 L236 368 L340 264"
+    fill="none"
+    stroke="#2e2e2e"
+    stroke-width="30"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

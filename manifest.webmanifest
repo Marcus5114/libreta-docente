@@ -1,0 +1,52 @@
+{
+  "name": "Libreta Docente — registro de aula",
+  "short_name": "Libreta",
+  "description": "Registro de participación, asistencia, trabajos prácticos y exámenes. Funciona sin conexión.",
+  "lang": "es-AR",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fbfbfa",
+  "theme_color": "#fbfbfa",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "./iconos/icono.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./iconos/icono-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./iconos/icono-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./iconos/icono-mascara.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Empezar clase",
+      "short_name": "Clase",
+      "url": "./#/clase"
+    },
+    {
+      "name": "Trabajos",
+      "short_name": "Trabajos",
+      "url": "./#/trabajos"
+    }
+  ]
+}
